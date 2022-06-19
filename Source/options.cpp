@@ -1243,11 +1243,12 @@ uint32_t KeymapperOptions::KeyForAction(string_view actionName) const
 
 CheatingOptions::CheatingOptions()
     : OptionCategoryBase("Cheating", N_("Cheating"), N_("Cheating Settings"))
+    , extendCharacterAttributeBaseLimit("ExtendCharacterAttributeBaseLimit", OptionEntryFlags::None, N_("Extend character attribute base limit"), N_("Extend character attribute base (stats) limit."), 0)
 {
 }
 std::vector<OptionEntryBase *> CheatingOptions::GetEntries()
 {
-	return {};
+	return {{&extendCharacterAttributeBaseLimit}};
 }
 
 } // namespace devilution

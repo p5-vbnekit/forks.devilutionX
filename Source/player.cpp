@@ -3,8 +3,10 @@
  *
  * Implementation of player functionality, leveling, actions, creation, loading, etc.
  */
-#include <algorithm>
+#include <limits>
 #include <cstdint>
+#include <algorithm>
+#include <type_traits>
 
 #include "control.h"
 #include "controls/plrctrls.h"
@@ -2012,18 +2014,23 @@ int Player::GetCurrentAttributeValue(CharacterAttribute attribute) const
 
 int Player::GetMaximumAttributeValue(CharacterAttribute attribute) const
 {
-	static const int MaxStats[enum_size<HeroClass>::value][enum_size<CharacterAttribute>::value] = {
-		// clang-format off
-		{ 250,  50,  60, 100 },
-		{  55,  70, 250,  80 },
-		{  45, 250,  85,  80 },
-		{ 150,  80, 150,  80 },
-		{ 120, 120, 120, 100 },
-		{ 255,   0,  55, 150 },
-		// clang-format on
-	};
+	auto const vanilla = [this, &attribute] () {
+		static const int MaxStats[enum_size<HeroClass>::value][enum_size<CharacterAttribute>::value] = {
+			// clang-format off
+			{ 250,  50,  60, 100 },
+			{  55,  70, 250,  80 },
+			{  45, 250,  85,  80 },
+			{ 150,  80, 150,  80 },
+			{ 120, 120, 120, 100 },
+			{ 255,   0,  55, 150 },
+			// clang-format on
+		};
+		return MaxStats[static_cast<::std::size_t>(_pClass)][static_cast<::std::size_t>(attribute)];
+	} ();
 
-	return MaxStats[static_cast<std::size_t>(_pClass)][static_cast<std::size_t>(attribute)];
+	return ::std::max(vanilla, utils::arithmetic_type::make_limited<decltype(vanilla)>(
+		*(sgOptions.Cheating.extendCharacterAttributeBaseLimit)
+	));
 }
 
 Point Player::GetTargetPosition() const
