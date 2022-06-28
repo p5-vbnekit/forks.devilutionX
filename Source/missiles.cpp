@@ -5,7 +5,11 @@
  */
 #include "missiles.h"
 
+#include <cmath>
 #include <climits>
+
+#include <utility>
+#include <type_traits>
 
 #include "control.h"
 #include "controls/plrctrls.h"
@@ -23,6 +27,7 @@
 #include "monster.h"
 #include "spells.h"
 #include "trigs.h"
+#include "utils/arithmetic_type.hpp"
 
 namespace devilution {
 
@@ -31,28 +36,34 @@ bool MissilePreFlag;
 
 namespace {
 
-int AddClassHealingBonus(int hp, HeroClass heroClass)
+template <class T> inline constexpr static auto AddClassHealingBonus(T &&hp, HeroClass heroClass)
 {
+	auto &&value = +0.0e+0 + ::std::forward<T>(hp);
 	switch (heroClass) {
+	default: break;
 	case HeroClass::Warrior:
 	case HeroClass::Monk:
 	case HeroClass::Barbarian:
-		return hp * 2;
+		value *= +2.0e+0;
+		break;
 	case HeroClass::Rogue:
 	case HeroClass::Bard:
-		return hp + hp / 2;
-	default:
-		return hp;
+		value *= +1.5e+0;
+		break;
 	}
+	if constexpr(not ::std::is_floating_point_v<::std::decay_t<T>>) value = ::std::round(value);
+	return utils::arithmetic_type::make_limited<::std::decay_t<T>>(::std::move(value));
 }
 
-int ScaleSpellEffect(int base, int spellLevel)
+template <class baseT, class levelT>
+inline constexpr static auto ScaleSpellEffect(baseT &&base, levelT &&level)
 {
-	for (int i = 0; i < spellLevel; i++) {
-		base += base / 8;
-	}
+	auto &&value = (+1.0e+0 + 1.25e-1 * ::std::max<::std::decay_t<levelT>>(
+		0, ::std::forward<levelT>(level)
+	)) * ::std::forward<baseT>(base);
 
-	return base;
+	if constexpr(not ::std::is_floating_point_v<::std::decay_t<baseT>>) value = ::std::round(value);
+	return utils::arithmetic_type::make_limited<::std::decay_t<baseT>>(::std::move(value));
 }
 
 int GenerateRndSum(int range, int iterations)
@@ -792,28 +803,33 @@ void GetDamageAmt(int i, int *mind, int *maxd)
 
 	auto &myPlayer = Players[MyPlayerId];
 
-	int sl = myPlayer._pSplLvl[i] + myPlayer._pISplLvlAdd;
+	auto const sl = +0.0e+0 + myPlayer._pSplLvl[i] + myPlayer._pISplLvlAdd;
 
 	switch (i) {
 	case SPL_FIREBOLT:
-		*mind = (myPlayer._pMagic / 8) + sl + 1;
-		*maxd = *mind + 9;
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(::std::round(+1.0e+0 + sl + (+1.25e-1 * myPlayer._pMagic)));
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(::std::round(+9.0e+0 + *mind));
 		break;
 	case SPL_HEAL:
 	case SPL_HEALOTHER:
 		/// BUGFIX: healing calculation is unused
-		*mind = AddClassHealingBonus(myPlayer._pLevel + sl + 1, myPlayer._pClass) - 1;
-		*maxd = AddClassHealingBonus((4 * myPlayer._pLevel) + (6 * sl) + 10, myPlayer._pClass) - 1;
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(::std::round(AddClassHealingBonus(
+			+1.0e+0 + sl + myPlayer._pLevel, myPlayer._pClass
+		) - 1.0e+0));
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(::std::round(AddClassHealingBonus(
+			+1.0e+1 + (+6.0e+0 * sl) + (+4.0e+0 * myPlayer._pLevel), myPlayer._pClass
+		) - 1.0e+0));
 		break;
 	case SPL_LIGHTNING:
 	case SPL_RUNELIGHT:
-		*mind = 2;
-		*maxd = 2 + myPlayer._pLevel;
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(2);
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(::std::round(+2.0e+0 + myPlayer._pLevel));
 		break;
 	case SPL_FLASH:
-		*mind = ScaleSpellEffect(myPlayer._pLevel, sl);
-		*mind += *mind / 2;
-		*maxd = *mind * 2;
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(::std::round(
+			+1.5e+0 * ScaleSpellEffect(myPlayer._pLevel, sl)
+		));
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(::std::round(+2.0e+0 * *mind));
 		break;
 	case SPL_IDENTIFY:
 	case SPL_TOWN:
@@ -838,83 +854,86 @@ void GetDamageAmt(int i, int *mind, int *maxd)
 	case SPL_BERSERK:
 	case SPL_SEARCH:
 	case SPL_RUNESTONE:
-		*mind = -1;
-		*maxd = -1;
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(-1);
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(-1);
 		break;
 	case SPL_FIREWALL:
 	case SPL_LIGHTWALL:
 	case SPL_FIRERING:
-		*mind = 2 * myPlayer._pLevel + 4;
-		*maxd = *mind + 36;
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(::std::round(
+			4.0e+0 + (+2.0e+0 * myPlayer._pLevel)
+		));
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(::std::round(+3.6e+1 + *mind));
 		break;
 	case SPL_FIREBALL:
 	case SPL_RUNEFIRE: {
-		int base = (2 * myPlayer._pLevel) + 4;
-		*mind = ScaleSpellEffect(base, sl);
-		*maxd = ScaleSpellEffect(base + 36, sl);
+		auto const base = 4.0e+0 + (+2.0e+0 * myPlayer._pLevel);
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(::std::round(ScaleSpellEffect(base, sl)));
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(::std::round(ScaleSpellEffect(+3.6e+1 + base, sl)));
 	} break;
 	case SPL_GUARDIAN: {
-		int base = (myPlayer._pLevel / 2) + 1;
-		*mind = ScaleSpellEffect(base, sl);
-		*maxd = ScaleSpellEffect(base + 9, sl);
+		auto const base = +1.0e+0 + (+5.0e-1 * myPlayer._pLevel);
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(::std::round(ScaleSpellEffect(base, sl)));
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(::std::round(ScaleSpellEffect(+9.0e+0 + base, sl)));
 	} break;
 	case SPL_CHAIN:
-		*mind = 4;
-		*maxd = 4 + (2 * myPlayer._pLevel);
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(4);
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(::std::round(+4.0e+0 + (+2.0e+0 * myPlayer._pLevel)));
 		break;
 	case SPL_WAVE:
-		*mind = 6 * (myPlayer._pLevel + 1);
-		*maxd = *mind + 54;
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(::std::round(+6.0e+0 * (+1.0e+0 + myPlayer._pLevel)));
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(::std::round(+5.4e+1 + *mind));
 		break;
 	case SPL_NOVA:
 	case SPL_IMMOLAT:
 	case SPL_RUNEIMMOLAT:
 	case SPL_RUNENOVA:
-		*mind = ScaleSpellEffect((myPlayer._pLevel + 5) / 2, sl) * 5;
-		*maxd = ScaleSpellEffect((myPlayer._pLevel + 30) / 2, sl) * 5;
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(::std::round(+5.0e+0 * ScaleSpellEffect(+5.0e-1 * (+5.0e+0 + myPlayer._pLevel), sl)));
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(::std::round(+5.0e+0 * ScaleSpellEffect(+5.0e-1 * (+3.0e+1 + myPlayer._pLevel), sl)));
 		break;
 	case SPL_FLAME:
-		*mind = 3;
-		*maxd = myPlayer._pLevel + 4;
-		*maxd += *maxd / 2;
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(3);
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(::std::round(+1.5e+0 * (+4.0e+0 + myPlayer._pLevel)));
 		break;
 	case SPL_GOLEM:
-		*mind = 11;
-		*maxd = 17;
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(11);
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(17);
 		break;
 	case SPL_APOCA:
-		*mind = myPlayer._pLevel;
-		*maxd = *mind * 6;
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(myPlayer._pLevel);
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(::std::round(+6.0e+0 * *mind));
 		break;
 	case SPL_ELEMENT:
-		*mind = ScaleSpellEffect(2 * myPlayer._pLevel + 4, sl);
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(::std::round(ScaleSpellEffect(+4.0e+0 + (+2.0e+0 * myPlayer._pLevel), sl)));
 		/// BUGFIX: add here '*mind /= 2;'
-		*maxd = ScaleSpellEffect(2 * myPlayer._pLevel + 40, sl);
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(::std::round(ScaleSpellEffect(+4.0e+1 + (+2.0e+0 * myPlayer._pLevel), sl)));
 		/// BUGFIX: add here '*maxd /= 2;'
 		break;
 	case SPL_CBOLT:
-		*mind = 1;
-		*maxd = *mind + (myPlayer._pMagic / 4);
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(1);
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(::std::round(*mind + (+2.5e-1 * myPlayer._pMagic)));
 		break;
 	case SPL_HBOLT:
-		*mind = myPlayer._pLevel + 9;
-		*maxd = *mind + 9;
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(::std::round(+9.0e+0 + myPlayer._pLevel));
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(::std::round(+9.0e+0 + *mind));
 		break;
 	case SPL_FLARE:
-		*mind = (myPlayer._pMagic / 2) + 3 * sl - (myPlayer._pMagic / 8);
-		*maxd = *mind;
+		*mind = utils::arithmetic_type::make_limited<decltype(*mind)>(::std::round(
+			(+5.0e-1 * myPlayer._pMagic) + ((+3.0e+0 * sl) - (+1.25e-1 * myPlayer._pMagic))
+		));
+		*maxd = utils::arithmetic_type::make_limited<decltype(*maxd)>(*mind);
 		break;
 	}
 }
 
 int GetSpellLevel(int playerId, spell_id sn)
 {
-	auto &player = Players[playerId];
-
-	if (playerId != MyPlayerId)
-		return 1; // BUGFIX spell level will be wrong in multiplayer
-
-	return std::max(player._pISplLvlAdd + player._pSplLvl[sn], 0);
+	// BUGFIX spell level will be wrong in multiplayer
+	if (playerId != MyPlayerId) return 1;
+	auto const &player = Players[playerId];
+	return utils::arithmetic_type::make_limited<int>(::std::max(
+		+0.0e+0, ::std::round(+0.0e+0 + player._pSplLvl[sn] + player._pISplLvlAdd)
+	));
 }
 
 Direction16 GetDirection16(Point p1, Point p2)

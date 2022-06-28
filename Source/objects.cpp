@@ -3,9 +3,11 @@
  *
  * Implementation of object functionality, interaction, spawning, loading, etc.
  */
-#include <algorithm>
 #include <climits>
 #include <cstdint>
+
+#include <algorithm>
+#include <type_traits>
 
 #include "DiabloUI/ui_flags.hpp"
 #include "automap.h"
@@ -35,6 +37,7 @@
 #include "utils/language.h"
 #include "utils/log.hpp"
 #include "utils/utf8.hpp"
+#include "utils/arithmetic_type.hpp"
 
 namespace devilution {
 
@@ -2230,9 +2233,13 @@ void OperateBook(int pnum, Object &book)
 	}
 
 	if (setlvlnum == SL_BONECHAMB) {
-		player._pMemSpells |= GetSpellBitmask(SPL_GUARDIAN);
-		if (player._pSplLvl[SPL_GUARDIAN] < MAX_SPELL_LEVEL)
-			player._pSplLvl[SPL_GUARDIAN]++;
+		{
+			auto const spell = SPL_GUARDIAN;
+			auto &level = player._pSplLvl[spell];
+			player._pMemSpells |= GetSpellBitmask(spell);
+			auto const limit = utils::arithmetic_type::make_limited<decltype(level)>(player.GetMaxSpellBaseLevel());
+			if (level < limit) level++;
+		}
 		Quests[Q_SCHAMB]._qactive = QUEST_DONE;
 		if (!deltaload)
 			PlaySfxLoc(IS_QUESTDN, book.position);
@@ -2831,10 +2838,12 @@ bool OperateShrineEnchanted(int pnum)
 	}
 	if (cnt > 1) {
 		spell = 1;
+		auto const maxSpellLevel = player.GetMaxSpellBaseLevel();
 		for (int j = SPL_FIREBOLT; j < maxSpells; j++) { // BUGFIX: < MAX_SPELLS, there is no spell with MAX_SPELLS index (fixed)
 			if ((player._pMemSpells & spell) != 0) {
-				if (player._pSplLvl[j] < MAX_SPELL_LEVEL)
-					player._pSplLvl[j]++;
+				auto &level = player._pSplLvl[j];
+				auto const limit = utils::arithmetic_type::make_limited<decltype(level)>(maxSpellLevel);
+				if (level < limit) level++;
 			}
 			spell *= 2;
 		}
@@ -2885,12 +2894,14 @@ bool OperateShrineFascinating(int pnum)
 
 	auto &player = Players[pnum];
 
-	player._pMemSpells |= GetSpellBitmask(SPL_FIREBOLT);
-
-	if (player._pSplLvl[SPL_FIREBOLT] < MAX_SPELL_LEVEL)
-		player._pSplLvl[SPL_FIREBOLT]++;
-	if (player._pSplLvl[SPL_FIREBOLT] < MAX_SPELL_LEVEL)
-		player._pSplLvl[SPL_FIREBOLT]++;
+	{
+		auto const spell = SPL_FIREBOLT;
+		auto &level = player._pSplLvl[spell];
+		using Level = ::std::decay_t<decltype(level)>;
+		player._pMemSpells |= GetSpellBitmask(spell);
+		auto const limit = utils::arithmetic_type::make_limited<Level>(player.GetMaxSpellBaseLevel());
+		if (level < limit) level += ::std::min<Level>(2, limit - level);
+	}
 
 	DWORD t = player._pMaxManaBase / 10;
 	int v1 = player._pMana - player._pManaBase;
@@ -3043,12 +3054,14 @@ bool OperateShrineSacred(int pnum)
 
 	auto &player = Players[pnum];
 
-	player._pMemSpells |= GetSpellBitmask(SPL_CBOLT);
-
-	if (player._pSplLvl[SPL_CBOLT] < MAX_SPELL_LEVEL)
-		player._pSplLvl[SPL_CBOLT]++;
-	if (player._pSplLvl[SPL_CBOLT] < MAX_SPELL_LEVEL)
-		player._pSplLvl[SPL_CBOLT]++;
+	{
+		auto const spell = SPL_CBOLT;
+		auto &level = player._pSplLvl[spell];
+		using Level = ::std::decay_t<decltype(level)>;
+		player._pMemSpells |= GetSpellBitmask(spell);
+		auto const limit = utils::arithmetic_type::make_limited<Level>(player.GetMaxSpellBaseLevel());
+		if (level < limit) level += ::std::min<Level>(2, limit - level);
+	}
 
 	uint32_t t = player._pMaxManaBase / 10;
 	int v1 = player._pMana - player._pManaBase;
@@ -3197,11 +3210,14 @@ bool OperateShrineOrnate(int pnum)
 
 	auto &player = Players[pnum];
 
-	player._pMemSpells |= GetSpellBitmask(SPL_HBOLT);
-	if (player._pSplLvl[SPL_HBOLT] < MAX_SPELL_LEVEL)
-		player._pSplLvl[SPL_HBOLT]++;
-	if (player._pSplLvl[SPL_HBOLT] < MAX_SPELL_LEVEL)
-		player._pSplLvl[SPL_HBOLT]++;
+	{
+		auto const spell = SPL_HBOLT;
+		auto &level = player._pSplLvl[spell];
+		using Level = ::std::decay_t<decltype(level)>;
+		player._pMemSpells |= GetSpellBitmask(spell);
+		auto const limit = utils::arithmetic_type::make_limited<Level>(player.GetMaxSpellBaseLevel());
+		if (level < limit) level += ::std::min<Level>(2, limit - level);
+	}
 
 	uint32_t t = player._pMaxManaBase / 10;
 	int v1 = player._pMana - player._pManaBase;

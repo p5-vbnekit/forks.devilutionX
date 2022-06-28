@@ -104,11 +104,8 @@ void DrawSpell(const Surface &out)
 
 	// BUGFIX: Move the next line into the if statement to avoid OOB (SPL_INVALID is -1) (fixed)
 	if (st == RSPLTYPE_SPELL && spl != SPL_INVALID) {
-		int tlvl = myPlayer._pISplLvlAdd + myPlayer._pSplLvl[spl];
-		if (CheckSpell(MyPlayerId, spl, st, true) != SpellCheckResult::Success)
-			st = RSPLTYPE_INVALID;
-		if (tlvl <= 0)
-			st = RSPLTYPE_INVALID;
+		if (CheckSpell(MyPlayerId, spl, st, true) != SpellCheckResult::Success) st = RSPLTYPE_INVALID;
+		else if (+0.0e+0 >= +0.0e+0 + myPlayer._pISplLvlAdd + myPlayer._pSplLvl[spl]) st = RSPLTYPE_INVALID;
 	}
 	if (currlevel == 0 && st != RSPLTYPE_INVALID && !spelldata[spl].sTownSpell)
 		st = RSPLTYPE_INVALID;
@@ -134,13 +131,9 @@ void DrawSpellList(const Surface &out)
 		spell_type transType = spellListItem.type;
 		int spellLevel = 0;
 		const SpellData &spellDataItem = spelldata[static_cast<size_t>(spellListItem.id)];
-		if (currlevel == 0 && !spellDataItem.sTownSpell) {
-			transType = RSPLTYPE_INVALID;
-		}
+		if ((0 == currlevel) && (not spellDataItem.sTownSpell)) transType = RSPLTYPE_INVALID;
 		if (spellListItem.type == RSPLTYPE_SPELL) {
-			spellLevel = std::max(myPlayer._pISplLvlAdd + myPlayer._pSplLvl[spellListItem.id], 0);
-			if (spellLevel == 0)
-				transType = RSPLTYPE_INVALID;
+			if (not (+0.0e+0 < +0.0e+0 + myPlayer._pISplLvlAdd + myPlayer._pSplLvl[spellListItem.id])) transType = RSPLTYPE_INVALID;
 		}
 
 		SetSpellTrans(transType);

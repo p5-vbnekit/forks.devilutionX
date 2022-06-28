@@ -5,10 +5,12 @@
  */
 #include "control.h"
 
-#include <algorithm>
-#include <array>
 #include <cstddef>
+
+#include <array>
 #include <string>
+#include <algorithm>
+#include <type_traits>
 
 #include <fmt/format.h>
 
@@ -46,6 +48,7 @@
 #include "utils/sdl_geometry.h"
 #include "utils/stdcompat/optional.hpp"
 #include "utils/utf8.hpp"
+#include "utils/arithmetic_type.hpp"
 
 #ifdef _DEBUG
 #include "debug.h"
@@ -716,7 +719,9 @@ void CheckPanelInfo()
 				break;
 			case RSPLTYPE_SPELL: {
 				AddPanelString(fmt::format(_("{:s} Spell"), pgettext("spell", spelldata[spellId].sNameText)));
-				int c = std::max(myPlayer._pISplLvlAdd + myPlayer._pSplLvl[spellId], 0);
+				auto const c = utils::arithmetic_type::make_limited<decltype(myPlayer._pSplLvl[spellId])>(::std::max(
+					+0.0e+0, +0.0e+0 + myPlayer._pISplLvlAdd + myPlayer._pSplLvl[spellId]
+				));
 				AddPanelString(c == 0 ? _("Spell Level 0 - Unusable") : fmt::format(_("Spell Level {:d}"), c));
 			} break;
 			case RSPLTYPE_SCROLL: {

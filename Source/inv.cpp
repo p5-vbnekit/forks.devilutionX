@@ -3,9 +3,11 @@
  *
  * Implementation of player inventory.
  */
+#include <cmath>
 #include <utility>
-
 #include <algorithm>
+#include <type_traits>
+
 #include <fmt/format.h>
 
 #include "DiabloUI/ui_flags.hpp"
@@ -30,6 +32,7 @@
 #include "utils/sdl_geometry.h"
 #include "utils/stdcompat/optional.hpp"
 #include "utils/utf8.hpp"
+#include "utils/arithmetic_type.hpp"
 
 namespace devilution {
 
@@ -909,19 +912,13 @@ void CheckInvCut(int pnum, Point cursorPosition, bool automaticMove, bool dropIt
 
 void UpdateBookLevel(Player &player, Item &book)
 {
-	if (book._iMiscId != IMISC_BOOK)
-		return;
-
-	book._iMinMag = spelldata[book._iSpell].sMinInt;
-	int8_t spellLevel = player._pSplLvl[book._iSpell];
-	while (spellLevel != 0) {
-		book._iMinMag += 20 * book._iMinMag / 100;
-		spellLevel--;
-		if (book._iMinMag + 20 * book._iMinMag / 100 > 255) {
-			book._iMinMag = -1;
-			spellLevel = 0;
-		}
-	}
+	if (IMISC_BOOK == book._iMiscId) {
+		auto const &level = player._pSplLvl[book._iSpell];
+		auto const &initial = spelldata[book._iSpell].sMinInt;
+		book._iMinMag = utils::arithmetic_type::make_limited<decltype(book._iMinMag)>(::std::round(
+			initial * (+1.0e+0 + (+2.0e-1 * ::std::max<::std::decay_t<decltype(level)>>(0, level)))
+		));
+	};
 }
 
 void TryCombineNaKrulNotes(Player &player, Item &noteItem)

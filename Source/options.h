@@ -591,6 +591,7 @@ struct CheatingOptions : OptionCategoryBase {
 	std::vector<OptionEntryBase *> GetEntries() override;
 
 	OptionEntryInt<::std::uint16_t> extendCharacterAttributeBaseLimit;
+	OptionEntryInt<::std::uint16_t> extendCharacterSpellLevelBaseLimit;
 };
 
 struct Options {

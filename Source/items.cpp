@@ -5,13 +5,17 @@
  */
 #include "items.h"
 
-#include <algorithm>
+#include <cmath>
+#include <climits>
+#include <cstdint>
+
 #include <bitset>
+#include <algorithm>
+#include <type_traits>
+
 #ifdef _DEBUG
 #include <random>
 #endif
-#include <climits>
-#include <cstdint>
 
 #include <fmt/format.h>
 
@@ -41,6 +45,7 @@
 #include "utils/math.h"
 #include "utils/stdcompat/algorithm.hpp"
 #include "utils/utf8.hpp"
+#include "utils/arithmetic_type.hpp"
 
 namespace devilution {
 
@@ -521,29 +526,20 @@ void CalcPlrItemMin(Player &player)
 	}
 }
 
-uint8_t CalculateMagicRequirementForBook(spell_id spell, int8_t spellLevel)
+inline static auto CalculateMagicRequirementForBook(spell_id spell, int level)
 {
-	int magicRequirement = spelldata[spell].sMinInt;
-
-	while (spellLevel != 0) {
-		magicRequirement += 20 * magicRequirement / 100;
-		spellLevel--;
-		if (magicRequirement + 20 * magicRequirement / 100 > 255) {
-			magicRequirement = 255;
-			break;
-		}
-	}
-
-	return magicRequirement;
+	auto const positive = ::std::max<::std::decay_t<decltype(level)>>(0, level);
+	return utils::arithmetic_type::make_limited<::std::uint8_t>(::std::round(
+		spelldata[spell].sMinInt * (+1.0e+0 + (+2.0e-1 * positive))
+	));
 }
 
 void CalcPlrBookVals(Player &player)
 {
 	auto processItem = [](Player &player, Item &item) {
 		if (item._itype == ItemType::Misc && item._iMiscId == IMISC_BOOK) {
-			spell_id spell = item._iSpell;
-			int8_t spellLevel = player._pSplLvl[spell];
-			item._iMinMag = CalculateMagicRequirementForBook(spell, spellLevel);
+			auto const &spell = item._iSpell;
+			item._iMinMag = CalculateMagicRequirementForBook(spell, player._pSplLvl[spell]);
 			item._iStatFlag = player.CanUseItem(item);
 		}
 	};
@@ -3970,9 +3966,12 @@ void UseItem(int pnum, item_misc_id mid, spell_id spl)
 		}
 		break;
 	case IMISC_BOOK:
-		player._pMemSpells |= GetSpellBitmask(spl);
-		if (player._pSplLvl[spl] < MAX_SPELL_LEVEL)
-			player._pSplLvl[spl]++;
+		{
+			player._pMemSpells |= GetSpellBitmask(spl);
+			auto &level = player._pSplLvl[spl];
+			auto const limit = utils::arithmetic_type::make_limited<decltype(level)>(player.GetMaxSpellBaseLevel());
+			if (level < limit) level++;
+		}
 		if ((player._pIFlags & ISPL_NOMANA) == 0) {
 			player._pMana += spelldata[spl].sManaCost << 6;
 			player._pMana = std::min(player._pMana, player._pMaxMana);

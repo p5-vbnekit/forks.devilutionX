@@ -83,7 +83,7 @@ TEST(Player, PM_DoGotHit)
 
 static void AssertPlayer(Player &player)
 {
-	ASSERT_EQ(Count8(player._pSplLvl, 64), 0);
+	ASSERT_EQ(CountInt(player._pSplLvl, 64), 0);
 	ASSERT_EQ(Count8(player.InvGrid, NUM_INV_GRID_ELEM), 1);
 	ASSERT_EQ(CountItems(player.InvBody, NUM_INVLOC), 1);
 	ASSERT_EQ(CountItems(player.InvList, NUM_INV_GRID_ELEM), 1);

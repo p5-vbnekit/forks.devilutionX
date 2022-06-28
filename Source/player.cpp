@@ -36,6 +36,7 @@
 #include "utils/language.h"
 #include "utils/log.hpp"
 #include "utils/utf8.hpp"
+#include "utils/arithmetic_type.hpp"
 
 namespace devilution {
 
@@ -1864,16 +1865,25 @@ void ValidatePlayer()
 		myPlayer._pBaseVit = myPlayer.GetMaximumAttributeValue(CharacterAttribute::Vitality);
 	}
 
-	uint64_t msk = 0;
-	for (int b = SPL_FIREBOLT; b < MAX_SPELLS; b++) {
-		if (GetSpellBookLevel((spell_id)b) != -1) {
-			msk |= GetSpellBitmask(b);
-			if (myPlayer._pSplLvl[b] > MAX_SPELL_LEVEL)
-				myPlayer._pSplLvl[b] = MAX_SPELL_LEVEL;
+	{
+		auto msk = static_cast<::std::uint64_t>(0);
+		auto offset = static_cast<::std::size_t>(0);
+		auto const limit = ::std::max(
+			static_cast<::std::decay_t<decltype(myPlayer._pSplLvl[0])>>(0),
+			utils::arithmetic_type::make_limited<decltype(myPlayer._pSplLvl[0])>(myPlayer.GetMaxSpellBaseLevel())
+		);
+		for (auto &level: myPlayer._pSplLvl) {
+			if (not (MAX_SPELLS > offset)) break;
+			if (-1 != GetSpellBookLevel(static_cast<spell_id>(offset))) {
+				msk |= GetSpellBitmask(offset);
+				if (0 > level) level = 0;
+				else if (limit < level) level = limit;
+			}
+			offset++;
 		}
-	}
 
-	myPlayer._pMemSpells &= msk;
+		myPlayer._pMemSpells &= msk;
+	}
 }
 
 void CheckCheatStats(Player &player)
@@ -2094,8 +2104,16 @@ void Player::Reset()
 
 int Player::GetManaShieldDamageReduction()
 {
-	constexpr int8_t Max = 7;
-	return 24 - std::min(_pSplLvl[SPL_MANASHIELD], Max) * 3;
+	auto const &level = _pSplLvl[SPL_MANASHIELD];
+	return 24 - 3 * ::std::min(level, static_cast<::std::decay_t<decltype(level)>>(7));
+}
+
+int Player::GetMaxSpellBaseLevel()
+{
+	return ::std::max(
+		utils::arithmetic_type::make_limited<int>(MAX_VANILLA_SPELL_LEVEL),
+		utils::arithmetic_type::make_limited<int>(*(sgOptions.Cheating.extendCharacterSpellLevelBaseLimit))
+	);
 }
 
 void Player::RestorePartialLife()
@@ -2624,9 +2642,7 @@ void CreatePlayer(int playerId, HeroClass c)
 		player._pMemSpells = 0;
 	}
 
-	for (int8_t &spellLevel : player._pSplLvl) {
-		spellLevel = 0;
-	}
+	for (auto &spellLevel: player._pSplLvl) spellLevel = 0;
 
 	player._pSpellFlags = SpellFlag::None;
 

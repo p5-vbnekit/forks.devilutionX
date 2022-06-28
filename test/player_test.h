@@ -41,3 +41,13 @@ inline static int CountBool(bool *bools, int n)
 
 	return count;
 }
+
+inline static int CountInt(int *ints, int n)
+{
+	int count = n;
+	for (int i = 0; i < n; i++)
+		if (ints[i] == 0)
+			count--;
+
+	return count;
+}

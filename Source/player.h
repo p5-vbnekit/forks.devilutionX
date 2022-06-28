@@ -5,8 +5,11 @@
  */
 #pragma once
 
-#include <array>
+#include <cmath>
 #include <cstdint>
+
+#include <array>
+#include <algorithm>
 
 #include "diablo.h"
 #include "engine.h"
@@ -22,6 +25,7 @@
 #include "spelldat.h"
 #include "utils/attributes.h"
 #include "utils/enum_traits.h"
+#include "utils/arithmetic_type.hpp"
 #include "utils/stdcompat/algorithm.hpp"
 
 namespace devilution {
@@ -31,7 +35,7 @@ namespace devilution {
 #define MAXBELTITEMS 8
 #define MAXRESIST 75
 #define MAXCHARLEVEL 50
-#define MAX_SPELL_LEVEL 15
+#define MAX_VANILLA_SPELL_LEVEL 15
 #define PLR_NAME_LEN 32
 
 constexpr size_t NumHotkeys = 12;
@@ -247,7 +251,7 @@ struct Player {
 	spell_id _pRSpell;
 	spell_type _pRSplType;
 	spell_id _pSBkSpell;
-	int8_t _pSplLvl[64];
+	int _pSplLvl[64];
 	uint64_t _pMemSpells;  // Bitmask of learned spells
 	uint64_t _pAblSpells;  // Bitmask of abilities
 	uint64_t _pScrlSpells; // Bitmask of spells available via scrolls
@@ -328,7 +332,7 @@ struct Player {
 	/** Bitmask using item_special_effect */
 	int _pIFlags;
 	int _pIGetHit;
-	int8_t _pISplLvlAdd;
+	int _pISplLvlAdd;
 	int _pISplDur;
 	int _pIEnAc;
 	int _pIFMinDam;
@@ -564,12 +568,19 @@ struct Player {
 	 */
 	int GetSpellLevel(spell_id spell) const
 	{
-		if (spell == SPL_INVALID || static_cast<std::size_t>(spell) >= sizeof(_pSplLvl)) {
-			return 0;
-		}
-
-		return std::max<int8_t>(_pISplLvlAdd + _pSplLvl[static_cast<std::size_t>(spell)], 0);
+		if (SPL_INVALID == spell) return 0;
+		auto const offset = static_cast<::std::size_t>(spell);
+		if (not (sizeof(_pSplLvl) > offset)) return 0;
+		return utils::arithmetic_type::make_limited<int>(::std::max(+0.0e+0, ::std::round(
+			+0.0e+0 + _pISplLvlAdd + _pSplLvl[offset]
+		)));
 	}
+
+	/**
+	 * @brief Gets the maximum spell base level for the player, without item bonuses
+	 * @return maximum spell base level
+	 */
+	static int GetMaxSpellBaseLevel();
 
 	/**
 	 * @brief Return monster armor value after including player's armor piercing % (hellfire only)

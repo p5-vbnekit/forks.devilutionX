@@ -131,16 +131,16 @@ int GetManaAmount(Player &player, spell_id sn)
 	int adj = 0;
 
 	// spell level
-	int sl = std::max(player._pSplLvl[sn] + player._pISplLvlAdd - 1, 0);
+	auto const sl = ::std::max(+0.0e+0, -1.0e+0 + player._pSplLvl[sn] + player._pISplLvlAdd);
 
-	if (sl > 0) {
-		adj = sl * spelldata[sn].sManaAdj;
+	if (+0.0e+0 < sl) {
+		adj = utils::arithmetic_type::make_limited<decltype(adj)>(::std::round(sl * spelldata[sn].sManaAdj));
 	}
 	if (sn == SPL_FIREBOLT) {
 		adj /= 2;
 	}
-	if (sn == SPL_RESURRECT && sl > 0) {
-		adj = sl * (spelldata[SPL_RESURRECT].sManaCost / 8);
+	if (sn == SPL_RESURRECT && (+0.0e+0 < sl)) {
+		adj = utils::arithmetic_type::make_limited<decltype(adj)>(::std::round(+1.25e-1 * sl * spelldata[SPL_RESURRECT].sManaCost));
 	}
 
 	if (sn == SPL_HEAL || sn == SPL_HEALOTHER) {

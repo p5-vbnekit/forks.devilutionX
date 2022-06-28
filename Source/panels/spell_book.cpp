@@ -15,6 +15,7 @@
 #include "player.h"
 #include "spelldat.h"
 #include "utils/language.h"
+#include "utils/arithmetic_type.hpp"
 #include "utils/stdcompat/optional.hpp"
 
 #define SPLICONLAST (gbIsHellfire ? 52 : 43)
@@ -67,7 +68,7 @@ spell_type GetSBookTrans(spell_id ii, bool townok)
 		if (CheckSpell(MyPlayerId, ii, st, true) != SpellCheckResult::Success) {
 			st = RSPLTYPE_INVALID;
 		}
-		if ((char)(player._pSplLvl[ii] + player._pISplLvlAdd) <= 0) {
+		if (not (+0.0e+0 < (+0.0e+0 + player._pSplLvl[ii] + player._pISplLvlAdd))) {
 			st = RSPLTYPE_INVALID;
 		}
 	}
@@ -160,9 +161,11 @@ void DrawSpellBook(const Surface &out)
 			} break;
 			default: {
 				int mana = GetManaAmount(player, sn) >> 6;
-				int lvl = std::max(player._pSplLvl[sn] + player._pISplLvlAdd, 0);
+				auto const lvl = utils::arithmetic_type::make_limited<decltype(player._pSplLvl[sn])>(::std::round(::std::max(
+					+0.0e+0, +0.0e+0 + player._pSplLvl[sn] + player._pISplLvlAdd)
+				));
 				PrintSBookStr(out, line0, fmt::format(pgettext(/* TRANSLATORS: UI constrains, keep short please.*/ "spellbook", "Level {:d}"), lvl), UiFlags::AlignRight);
-				if (lvl == 0) {
+				if (0 == lvl) {
 					PrintSBookStr(out, line1, _("Unusable"), UiFlags::AlignRight);
 				} else {
 					if (sn != SPL_BONESPIRIT) {
