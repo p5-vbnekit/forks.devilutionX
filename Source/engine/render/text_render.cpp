@@ -6,8 +6,9 @@
 #include "text_render.hpp"
 
 #include <array>
-#include <unordered_map>
 #include <utility>
+#include <type_traits>
+#include <unordered_map>
 
 #include "DiabloUI/art_draw.h"
 #include "DiabloUI/diabloui.h"
@@ -561,8 +562,8 @@ std::string WordWrapString(string_view text, unsigned width, GameFontTables size
 			continue; // String is still within the limit, continue to the next symbol
 		}
 
-		if (lastBreakablePos == -1) { // Single word longer than width
-			continue;
+		if (static_cast<::std::decay_t<decltype(lastBreakablePos)>>(-1) == lastBreakablePos) {
+			continue; // Single word longer than width
 		}
 
 		// Break line and continue to next line

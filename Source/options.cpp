@@ -127,22 +127,22 @@ private:
 	const char *keyName_;
 };
 
-int GetIniInt(const char *keyname, const char *valuename, int defaultValue)
+inline static int GetIniInt(const char *keyname, const char *valuename, int defaultValue)
 {
 	return GetIni().GetLongValue(keyname, valuename, defaultValue);
 }
 
-bool GetIniBool(const char *sectionName, const char *keyName, bool defaultValue)
+inline static bool GetIniBool(const char *sectionName, const char *keyName, bool defaultValue)
 {
 	return GetIni().GetBoolValue(sectionName, keyName, defaultValue);
 }
 
-float GetIniFloat(const char *sectionName, const char *keyName, float defaultValue)
+inline static float GetIniFloat(const char *sectionName, const char *keyName, float defaultValue)
 {
 	return (float)GetIni().GetDoubleValue(sectionName, keyName, defaultValue);
 }
 
-bool GetIniValue(const char *sectionName, const char *keyName, char *string, int stringSize, const char *defaultString = "")
+inline static bool GetIniValue(const char *sectionName, const char *keyName, char *string, int stringSize, const char *defaultString = "")
 {
 	const char *value = GetIni().GetValue(sectionName, keyName);
 	if (value == nullptr) {
@@ -153,7 +153,7 @@ bool GetIniValue(const char *sectionName, const char *keyName, char *string, int
 	return true;
 }
 
-bool GetIniStringVector(const char *sectionName, const char *keyName, std::vector<std::string> &stringValues)
+inline static bool GetIniStringVector(const char *sectionName, const char *keyName, std::vector<std::string> &stringValues)
 {
 	std::list<CSimpleIni::Entry> values;
 	if (!GetIni().GetAllValues(sectionName, keyName, values)) {
@@ -165,38 +165,38 @@ bool GetIniStringVector(const char *sectionName, const char *keyName, std::vecto
 	return true;
 }
 
-void SetIniValue(const char *keyname, const char *valuename, int value)
+inline static void SetIniValue(const char *keyname, const char *valuename, int value)
 {
 	IniChangedChecker changedChecker(keyname, valuename);
 	GetIni().SetLongValue(keyname, valuename, value, nullptr, false, true);
 }
 
-void SetIniValue(const char *keyname, const char *valuename, std::uint32_t value)
+inline static void SetIniValue(const char *keyname, const char *valuename, std::uint32_t value)
 {
 	IniChangedChecker changedChecker(keyname, valuename);
 	GetIni().SetLongValue(keyname, valuename, value, nullptr, false, true);
 }
 
-void SetIniValue(const char *keyname, const char *valuename, bool value)
+inline static void SetIniValue(const char *keyname, const char *valuename, bool value)
 {
 	IniChangedChecker changedChecker(keyname, valuename);
 	GetIni().SetLongValue(keyname, valuename, value ? 1 : 0, nullptr, false, true);
 }
 
-void SetIniValue(const char *keyname, const char *valuename, float value)
+inline static void SetIniValue(const char *keyname, const char *valuename, float value)
 {
 	IniChangedChecker changedChecker(keyname, valuename);
 	GetIni().SetDoubleValue(keyname, valuename, value, nullptr, true);
 }
 
-void SetIniValue(const char *sectionName, const char *keyName, const char *value)
+inline static void SetIniValue(const char *sectionName, const char *keyName, const char *value)
 {
 	IniChangedChecker changedChecker(sectionName, keyName);
 	auto &ini = GetIni();
 	ini.SetValue(sectionName, keyName, value, nullptr, true);
 }
 
-void SetIniValue(const char *keyname, const char *valuename, const std::vector<std::string> &stringValues)
+inline static void SetIniValue(const char *keyname, const char *valuename, const std::vector<std::string> &stringValues)
 {
 	IniChangedChecker changedChecker(keyname, valuename);
 	bool firstSet = true;
@@ -208,7 +208,7 @@ void SetIniValue(const char *keyname, const char *valuename, const std::vector<s
 		GetIni().SetValue(keyname, valuename, "", nullptr, true);
 }
 
-void SaveIni()
+inline static void SaveIni()
 {
 	if (!IniChanged)
 		return;
@@ -230,7 +230,7 @@ bool HardwareCursorDefault()
 }
 #endif
 
-void OptionGrabInputChanged()
+inline static void OptionGrabInputChanged()
 {
 #ifdef USE_SDL1
 	SDL_WM_GrabInput(*sgOptions.Gameplay.grabInput ? SDL_GRAB_ON : SDL_GRAB_OFF);
@@ -240,7 +240,7 @@ void OptionGrabInputChanged()
 #endif
 }
 
-void OptionExperienceBarChanged()
+inline static void OptionExperienceBarChanged()
 {
 	if (!gbRunGame)
 		return;
@@ -250,7 +250,7 @@ void OptionExperienceBarChanged()
 		FreeXPBar();
 }
 
-void OptionEnemyHealthBarChanged()
+inline static void OptionEnemyHealthBarChanged()
 {
 	if (!gbRunGame)
 		return;
@@ -260,7 +260,7 @@ void OptionEnemyHealthBarChanged()
 		FreeMonsterHealthBar();
 }
 
-void OptionShowFPSChanged()
+inline static void OptionShowFPSChanged()
 {
 	if (*sgOptions.Graphics.showFPS)
 		EnableFrameCount();
@@ -268,24 +268,24 @@ void OptionShowFPSChanged()
 		frameflag = false;
 }
 
-void OptionLanguageCodeChanged()
+inline static void OptionLanguageCodeChanged()
 {
 	LanguageInitialize();
 	LoadLanguageArchive();
 }
 
-void OptionGameModeChanged()
+inline static void OptionGameModeChanged()
 {
 	gbIsHellfire = *sgOptions.StartUp.gameMode == StartUpGameMode::Hellfire;
 	discord_manager::UpdateMenu(true);
 }
 
-void OptionSharewareChanged()
+inline static void OptionSharewareChanged()
 {
 	gbIsSpawn = *sgOptions.StartUp.shareware;
 }
 
-void OptionAudioChanged()
+inline static void OptionAudioChanged()
 {
 	effects_cleanup_sfx();
 	music_stop();

@@ -1399,7 +1399,7 @@ void SmithBuyEnter()
 	auto &myPlayer = Players[MyPlayerId];
 
 	int idx = stextsval + ((stextsel - stextup) / 4);
-	if (TotalPlayerGold() < smithitem[idx]._iIvalue) {
+	if (+1.0e+0 * TotalPlayerGold() < +1.0e+0 * smithitem[idx]._iIvalue) {
 		StartStore(STORE_NOMONEY);
 		return;
 	}
@@ -1465,7 +1465,7 @@ void SmithPremiumBuyEnter()
 
 	auto &myPlayer = Players[MyPlayerId];
 
-	if (TotalPlayerGold() < premiumitems[idx]._iIvalue) {
+	if (+1.0e+0 * TotalPlayerGold() < +1.0e+0 * premiumitems[idx]._iIvalue) {
 		StartStore(STORE_NOMONEY);
 		return;
 	}
@@ -1588,7 +1588,7 @@ void SmithRepairEnter()
 	auto &myPlayer = Players[MyPlayerId];
 
 	myPlayer.HoldItem = storehold[idx];
-	if (TotalPlayerGold() < storehold[idx]._iIvalue)
+	if (+1.0e+0 * TotalPlayerGold() < +1.0e+0 * storehold[idx]._iIvalue)
 		StartStore(STORE_NOMONEY);
 	else
 		StartStore(STORE_CONFIRM);
@@ -1665,7 +1665,7 @@ void WitchBuyEnter()
 
 	int idx = stextsval + ((stextsel - stextup) / 4);
 
-	if (TotalPlayerGold() < witchitem[idx]._iIvalue) {
+	if (+1.0e+0 * TotalPlayerGold() < +1.0e+0 * witchitem[idx]._iIvalue) {
 		StartStore(STORE_NOMONEY);
 		return;
 	}
@@ -1737,7 +1737,7 @@ void WitchRechargeEnter()
 
 	int idx = stextsval + ((stextsel - stextup) / 4);
 	myPlayer.HoldItem = storehold[idx];
-	if (TotalPlayerGold() < storehold[idx]._iIvalue)
+	if (+1.0e+0 * TotalPlayerGold() < +1.0e+0 * storehold[idx]._iIvalue)
 		StartStore(STORE_NOMONEY);
 	else
 		StartStore(STORE_CONFIRM);
@@ -1841,7 +1841,7 @@ void BoyBuyEnter()
 
 	auto &myPlayer = Players[MyPlayerId];
 
-	if (TotalPlayerGold() < price) {
+	if (+1.0e+0 * TotalPlayerGold() < +1.0e+0 * price) {
 		StartStore(STORE_NOMONEY);
 		return;
 	}
@@ -1976,7 +1976,7 @@ void HealerBuyEnter()
 
 	auto &myPlayer = Players[MyPlayerId];
 
-	if (TotalPlayerGold() < healitem[idx]._iIvalue) {
+	if (+1.0e+0 * TotalPlayerGold() < +1.0e+0 * healitem[idx]._iIvalue) {
 		StartStore(STORE_NOMONEY);
 		return;
 	}
@@ -2027,7 +2027,7 @@ void StorytellerIdentifyEnter()
 
 	int idx = stextsval + ((stextsel - stextup) / 4);
 	myPlayer.HoldItem = storehold[idx];
-	if (TotalPlayerGold() < storehold[idx]._iIvalue)
+	if (+1.0e+0 * TotalPlayerGold() < +1.0e+0 * storehold[idx]._iIvalue)
 		StartStore(STORE_NOMONEY);
 	else
 		StartStore(STORE_CONFIRM);

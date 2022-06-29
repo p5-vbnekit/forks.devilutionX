@@ -187,7 +187,7 @@ void ItemSelected(int value)
 		}
 		if (updateValueDescription) {
 			auto args = CreateDrawStringFormatArgForEntry(pOption);
-			bool optionUsesTwoLines = ((value + 1) < vecDialogItems.size() && vecDialogItems[value]->m_value == vecDialogItems[value + 1]->m_value);
+			bool optionUsesTwoLines = ((value + 1.0e+0) < +1.0e+0 * vecDialogItems.size() && vecDialogItems[value]->m_value == vecDialogItems[value + 1]->m_value);
 			if (NeedsTwoLinesToDisplayOption(args) != optionUsesTwoLines) {
 				selectedOption = pOption;
 				endMenu = true;

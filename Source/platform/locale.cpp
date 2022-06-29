@@ -29,7 +29,7 @@
 namespace devilution {
 namespace {
 
-std::string IetfToPosix(string_view langCode)
+inline static std::string IetfToPosix(string_view langCode)
 {
 	/*
 	 * Handle special case for simplified/traditional Chinese. IETF/BCP-47 specifies that only the script should be

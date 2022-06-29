@@ -329,7 +329,8 @@ void LanguageInitialize()
 			break;
 	}
 	if (rw == nullptr) {
-		SetPluralForm("(n != 1)"); // Reset to English plural form
+		// Reset to English plural form
+		SetPluralForm(const_cast<char *>("(n != 1)"));
 		return;
 	}
 
