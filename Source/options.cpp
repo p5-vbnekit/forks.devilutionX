@@ -1241,4 +1241,13 @@ uint32_t KeymapperOptions::KeyForAction(string_view actionName) const
 	return DVL_VK_INVALID;
 }
 
+CheatingOptions::CheatingOptions()
+    : OptionCategoryBase("Cheating", N_("Cheating"), N_("Cheating Settings"))
+{
+}
+std::vector<OptionEntryBase *> CheatingOptions::GetEntries()
+{
+	return {};
+}
+
 } // namespace devilution

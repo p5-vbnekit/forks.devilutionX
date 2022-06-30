@@ -586,6 +586,11 @@ private:
 	std::unordered_map<std::string, int> keyNameToKeyID;
 };
 
+struct CheatingOptions : OptionCategoryBase {
+	CheatingOptions();
+	std::vector<OptionEntryBase *> GetEntries() override;
+};
+
 struct Options {
 	StartUpOptions StartUp;
 	DiabloOptions Diablo;
@@ -598,6 +603,7 @@ struct Options {
 	ChatOptions Chat;
 	LanguageOptions Language;
 	KeymapperOptions Keymapper;
+	CheatingOptions Cheating;
 
 	[[nodiscard]] std::vector<OptionCategoryBase *> GetCategories()
 	{
@@ -613,6 +619,7 @@ struct Options {
 			&Network,
 			&Chat,
 			&Keymapper,
+			&Cheating,
 		};
 	}
 };
