@@ -297,6 +297,7 @@ void pfile_write_hero(bool writeGameData, bool clearTables)
 		SaveHotkeys();
 		SaveHeroItems(myPlayer);
 	}
+	SaveHeroExtensions(myPlayer);
 }
 
 void sfile_write_stash()
@@ -336,6 +337,7 @@ bool pfile_ui_set_hero_infos(bool (*uiAddHeroInfo)(_uiheroinfo *))
 
 				if (UnPackPlayer(&pkplr, player, false)) {
 					LoadHeroItems(player);
+					LoadHeroExtensions(player);
 					RemoveEmptyInventory(player);
 					CalcPlrInv(player, false);
 
@@ -393,6 +395,7 @@ bool pfile_ui_save_create(_uiheroinfo *heroinfo)
 		SaveHotkeys();
 		SaveHeroItems(player);
 	}
+	SaveHeroExtensions(player);
 
 	SaveWriter.Close();
 	return true;
@@ -430,6 +433,7 @@ void pfile_read_player_from_save(uint32_t saveNum, Player &player)
 	}
 
 	LoadHeroItems(player);
+	LoadHeroExtensions(player);
 	RemoveEmptyInventory(player);
 	CalcPlrInv(player, false);
 }

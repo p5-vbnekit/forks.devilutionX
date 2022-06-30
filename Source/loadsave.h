@@ -21,6 +21,7 @@ _item_indexes RemapItemIdxToSpawn(_item_indexes i);
 bool IsHeaderValid(uint32_t magicNumber);
 void LoadHotkeys();
 void LoadHeroItems(Player &player);
+void LoadHeroExtensions(Player &player);
 /**
  * @brief Remove invalid inventory items from the inventory grid
  * @param pnum The id of the player
@@ -34,6 +35,7 @@ void RemoveEmptyInventory(Player &player);
 void LoadGame(bool firstflag);
 void SaveHotkeys();
 void SaveHeroItems(Player &player);
+void SaveHeroExtensions(Player const &player);
 void SaveGameData();
 void SaveGame();
 void SaveLevel();

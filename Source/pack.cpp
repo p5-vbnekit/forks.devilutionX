@@ -5,11 +5,16 @@
  */
 #include "pack.h"
 
+#include <cstdint>
+#include <algorithm>
+#include <type_traits>
+
 #include "engine/random.hpp"
 #include "init.h"
 #include "loadsave.h"
 #include "stores.h"
 #include "utils/endian.hpp"
+#include "utils/arithmetic_type.hpp"
 
 namespace devilution {
 
@@ -89,10 +94,12 @@ void PackPlayer(PlayerPack *pPack, const Player &player, bool manashield, bool n
 	}
 	strcpy(pPack->pName, player._pName);
 	pPack->pClass = static_cast<int8_t>(player._pClass);
-	pPack->pBaseStr = player._pBaseStr;
-	pPack->pBaseMag = player._pBaseMag;
-	pPack->pBaseDex = player._pBaseDex;
-	pPack->pBaseVit = player._pBaseVit;
+
+	pPack->pBaseStr = utils::arithmetic_type::make_limited<decltype(pPack->pBaseStr)>(player._pBaseStr);
+	pPack->pBaseMag = utils::arithmetic_type::make_limited<decltype(pPack->pBaseMag)>(player._pBaseMag);
+	pPack->pBaseDex = utils::arithmetic_type::make_limited<decltype(pPack->pBaseDex)>(player._pBaseDex);
+	pPack->pBaseVit = utils::arithmetic_type::make_limited<decltype(pPack->pBaseVit)>(player._pBaseVit);
+
 	pPack->pLevel = player._pLevel;
 	pPack->pStatPts = player._pStatPts;
 	pPack->pExperience = SDL_SwapLE32(player._pExperience);
@@ -103,10 +110,21 @@ void PackPlayer(PlayerPack *pPack, const Player &player, bool manashield, bool n
 	pPack->pMaxManaBase = SDL_SwapLE32(player._pMaxManaBase);
 	pPack->pMemSpells = SDL_SwapLE64(player._pMemSpells);
 
-	for (int i = 0; i < 37; i++) // Should be MAX_SPELLS but set to 37 to make save games compatible
-		pPack->pSplLvl[i] = player._pSplLvl[i];
-	for (int i = 37; i < 47; i++)
-		pPack->pSplLvl2[i - 37] = player._pSplLvl[i];
+	{
+		auto offset = static_cast<::std::size_t>(0);
+		static_assert(::std::is_array_v<decltype(player._pSplLvl)>);
+		constexpr static auto const sourceSize = sizeof(player._pSplLvl);
+		for (auto &destination: pPack->pSplLvl) {
+			if (not (sourceSize > offset)) return;
+			auto const &source = player._pSplLvl[offset++];
+			destination = utils::arithmetic_type::make_limited<decltype(destination)>(source);
+		}
+		for (auto &destination: pPack->pSplLvl2) {
+			if (not (sourceSize > offset)) return;
+			auto const &source = player._pSplLvl[offset++];
+			destination = utils::arithmetic_type::make_limited<decltype(destination)>(source);
+		}
+	}
 
 	for (int i = 0; i < NUM_INVLOC; i++) {
 		const Item &item = player.InvBody[i];
@@ -229,14 +247,14 @@ bool UnPackPlayer(const PlayerPack *pPack, Player &player, bool netSync)
 
 	InitPlayer(player, true);
 
-	player._pBaseStr = pPack->pBaseStr;
-	player._pStrength = pPack->pBaseStr;
-	player._pBaseMag = pPack->pBaseMag;
-	player._pMagic = pPack->pBaseMag;
-	player._pBaseDex = pPack->pBaseDex;
-	player._pDexterity = pPack->pBaseDex;
-	player._pBaseVit = pPack->pBaseVit;
-	player._pVitality = pPack->pBaseVit;
+	player._pBaseStr = utils::arithmetic_type::make_limited<decltype(player._pBaseStr)>(pPack->pBaseStr);
+	player._pStrength = utils::arithmetic_type::make_limited<decltype(player._pStrength)>(pPack->pBaseStr);
+	player._pBaseMag = utils::arithmetic_type::make_limited<decltype(player._pBaseMag)>(pPack->pBaseMag);
+	player._pMagic = utils::arithmetic_type::make_limited<decltype(player._pMagic)>(pPack->pBaseMag);
+	player._pBaseDex = utils::arithmetic_type::make_limited<decltype(player._pBaseDex)>(pPack->pBaseDex);
+	player._pDexterity = utils::arithmetic_type::make_limited<decltype(player._pDexterity)>(pPack->pBaseDex);
+	player._pBaseVit = utils::arithmetic_type::make_limited<decltype(player._pBaseVit)>(pPack->pBaseVit);
+	player._pVitality = utils::arithmetic_type::make_limited<decltype(player._pVitality)>(pPack->pBaseVit);
 
 	player._pStatPts = pPack->pStatPts;
 	player._pExperience = SDL_SwapLE32(pPack->pExperience);
@@ -252,10 +270,21 @@ bool UnPackPlayer(const PlayerPack *pPack, Player &player, bool netSync)
 	player._pManaBase = SDL_SwapLE32(pPack->pManaBase);
 	player._pMemSpells = SDL_SwapLE64(pPack->pMemSpells);
 
-	for (int i = 0; i < 37; i++) // Should be MAX_SPELLS but set to 36 to make save games compatible
-		player._pSplLvl[i] = pPack->pSplLvl[i];
-	for (int i = 37; i < 47; i++)
-		player._pSplLvl[i] = pPack->pSplLvl2[i - 37];
+	[&player, pPack] {
+		auto offset = static_cast<::std::size_t>(0);
+		static_assert(::std::is_array_v<decltype(player._pSplLvl)>);
+		constexpr static auto const destinationSize = sizeof(player._pSplLvl);
+		for (auto const &source: pPack->pSplLvl) {
+			if (not (destinationSize > offset)) return;
+			auto &destination = player._pSplLvl[offset++];
+			destination = utils::arithmetic_type::make_limited<decltype(destination)>(source);
+		}
+		for (auto const &source: pPack->pSplLvl2) {
+			if (not (destinationSize > offset)) return;
+			auto &destination = player._pSplLvl[offset++];
+			destination = utils::arithmetic_type::make_limited<decltype(destination)>(source);
+		}
+	} ();
 
 	for (int i = 0; i < NUM_INVLOC; i++) {
 		auto packedItem = pPack->InvBody[i];

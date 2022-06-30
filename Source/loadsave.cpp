@@ -3,11 +3,31 @@
  *
  * Implementation of save game functionality.
  */
+// Ugh... Ugly spartan macro-coding :( :( :(
+// WARNING: Since some code is already petrified and stubbornly uses macros,
+// non-obvious things like this appear.
+// This inclusion requires breaking the style of the code and should be placed before.
+#define SI_SUPPORT_IOSTREAMS
+#include <SimpleIni.h>
+
 #include "loadsave.h"
 
+#include <cstdint>
 #include <climits>
 #include <cstring>
+
+#include <string>
+#include <vector>
+#include <memory>
+#include <utility>
 #include <numeric>
+#include <sstream>
+#include <charconv>
+#include <optional>
+#include <algorithm>
+#include <string_view>
+#include <type_traits>
+#include <system_error>
 #include <unordered_map>
 
 #include <SDL.h>
@@ -32,6 +52,7 @@
 #include "stores.h"
 #include "utils/endian.hpp"
 #include "utils/language.h"
+#include "utils/arithmetic_type.hpp"
 
 namespace devilution {
 
@@ -101,6 +122,11 @@ public:
 			m_buffer_ = ReadArchive(*archive, szFileName, &m_size_);
 		else
 			m_buffer_ = nullptr;
+	}
+
+	inline auto Size() const
+	{
+		return m_size_;
 	}
 
 	bool IsValid(size_t size = 1)
@@ -363,8 +389,7 @@ void LoadPlayer(LoadHelper &file, Player &player)
 	file.Skip(3); // Alignment
 	player._pSBkSpell = static_cast<spell_id>(file.NextLE<int32_t>());
 	file.Skip<int8_t>(); // Skip _pSBkSplType
-	for (int8_t &spellLevel : player._pSplLvl)
-		spellLevel = file.NextLE<int8_t>();
+	for (auto &spellLevel: player._pSplLvl) spellLevel = utils::arithmetic_type::make_limited<decltype(spellLevel)>(file.NextLE<::std::int8_t>());
 	file.Skip(7); // Alignment
 	player._pMemSpells = file.NextLE<uint64_t>();
 	player._pAblSpells = file.NextLE<uint64_t>();
@@ -389,14 +414,14 @@ void LoadPlayer(LoadHelper &file, Player &player)
 	file.NextBytes(player._pName, PLR_NAME_LEN);
 	player._pClass = static_cast<HeroClass>(file.NextLE<int8_t>());
 	file.Skip(3); // Alignment
-	player._pStrength = file.NextLE<int32_t>();
-	player._pBaseStr = file.NextLE<int32_t>();
-	player._pMagic = file.NextLE<int32_t>();
-	player._pBaseMag = file.NextLE<int32_t>();
-	player._pDexterity = file.NextLE<int32_t>();
-	player._pBaseDex = file.NextLE<int32_t>();
-	player._pVitality = file.NextLE<int32_t>();
-	player._pBaseVit = file.NextLE<int32_t>();
+	player._pStrength = utils::arithmetic_type::make_limited<decltype(player._pStrength)>(::std::max<::std::int32_t>(0, file.NextLE<::std::int32_t>()));
+	player._pBaseStr = utils::arithmetic_type::make_limited<decltype(player._pBaseStr)>(::std::max<::std::int32_t>(0, file.NextLE<::std::int32_t>()));
+	player._pMagic = utils::arithmetic_type::make_limited<decltype(player._pMagic)>(::std::max<::std::int32_t>(0, file.NextLE<::std::int32_t>()));
+	player._pBaseMag = utils::arithmetic_type::make_limited<decltype(player._pBaseMag)>(::std::max<::std::int32_t>(0, file.NextLE<::std::int32_t>()));
+	player._pDexterity = utils::arithmetic_type::make_limited<decltype(player._pDexterity)>(::std::max<::std::int32_t>(0, file.NextLE<::std::int32_t>()));
+	player._pBaseDex = utils::arithmetic_type::make_limited<decltype(player._pBaseDex)>(::std::max<::std::int32_t>(0, file.NextLE<::std::int32_t>()));
+	player._pVitality = utils::arithmetic_type::make_limited<decltype(player._pVitality)>(::std::max<::std::int32_t>(0, file.NextLE<::std::int32_t>()));
+	player._pBaseVit = utils::arithmetic_type::make_limited<decltype(player._pBaseVit)>(::std::max<::std::int32_t>(0, file.NextLE<::std::int32_t>()));
 	player._pStatPts = file.NextLE<int32_t>();
 	player._pDamageMod = file.NextLE<int32_t>();
 	player._pBaseToBlk = file.NextLE<int32_t>();
@@ -496,7 +521,7 @@ void LoadPlayer(LoadHelper &file, Player &player)
 	player._pISpells = file.NextLE<uint64_t>();
 	player._pIFlags = file.NextLE<int32_t>();
 	player._pIGetHit = file.NextLE<int32_t>();
-	player._pISplLvlAdd = file.NextLE<int8_t>();
+	player._pISplLvlAdd = utils::arithmetic_type::make_limited<decltype(player._pISplLvlAdd)>(file.NextLE<::std::int8_t>());
 	file.Skip(1); // Unused
 	file.Skip(2); // Alignment
 	player._pISplDur = file.NextLE<int32_t>();
@@ -1085,8 +1110,7 @@ void SavePlayer(SaveHelper &file, const Player &player)
 	file.WriteLE<int32_t>(player._pSBkSpell);
 	file.Skip<int8_t>(); // Skip _pSBkSplType
 
-	for (int8_t spellLevel : player._pSplLvl)
-		file.WriteLE<int8_t>(spellLevel);
+	for (auto const &level: player._pSplLvl) file.WriteLE(utils::arithmetic_type::make_limited<::std::int8_t>(level));
 
 	file.Skip(7); // Alignment
 	file.WriteLE<uint64_t>(player._pMemSpells);
@@ -1112,17 +1136,17 @@ void SavePlayer(SaveHelper &file, const Player &player)
 	file.WriteBytes(player._pName, PLR_NAME_LEN);
 	file.WriteLE<int8_t>(static_cast<int8_t>(player._pClass));
 	file.Skip(3); // Alignment
-	file.WriteLE<int32_t>(player._pStrength);
-	file.WriteLE<int32_t>(player._pBaseStr);
-	file.WriteLE<int32_t>(player._pMagic);
-	file.WriteLE<int32_t>(player._pBaseMag);
-	file.WriteLE<int32_t>(player._pDexterity);
-	file.WriteLE<int32_t>(player._pBaseDex);
-	file.WriteLE<int32_t>(player._pVitality);
-	file.WriteLE<int32_t>(player._pBaseVit);
+	file.WriteLE(::std::max<::std::int32_t>(0, utils::arithmetic_type::make_limited<::std::int32_t>(player._pStrength)));
+	file.WriteLE(::std::max<::std::int32_t>(0, utils::arithmetic_type::make_limited<::std::int32_t>(player._pBaseStr)));
+	file.WriteLE(::std::max<::std::int32_t>(0, utils::arithmetic_type::make_limited<::std::int32_t>(player._pMagic)));
+	file.WriteLE(::std::max<::std::int32_t>(0, utils::arithmetic_type::make_limited<::std::int32_t>(player._pBaseMag)));
+	file.WriteLE(::std::max<::std::int32_t>(0, utils::arithmetic_type::make_limited<::std::int32_t>(player._pDexterity)));
+	file.WriteLE(::std::max<::std::int32_t>(0, utils::arithmetic_type::make_limited<::std::int32_t>(player._pBaseDex)));
+	file.WriteLE(::std::max<::std::int32_t>(0, utils::arithmetic_type::make_limited<::std::int32_t>(player._pVitality)));
+	file.WriteLE(::std::max<::std::int32_t>(0, utils::arithmetic_type::make_limited<::std::int32_t>(player._pBaseVit)));
 	file.WriteLE<int32_t>(player._pStatPts);
 	file.WriteLE<int32_t>(player._pDamageMod);
-
+	
 	file.WriteLE<int32_t>(player._pBaseToBlk);
 	file.WriteLE<int32_t>(player._pHPBase);
 	file.WriteLE<int32_t>(player._pMaxHPBase);
@@ -1218,7 +1242,7 @@ void SavePlayer(SaveHelper &file, const Player &player)
 	file.WriteLE<int32_t>(player._pIFlags);
 	file.WriteLE<int32_t>(player._pIGetHit);
 
-	file.WriteLE<int8_t>(player._pISplLvlAdd);
+	file.WriteLE(utils::arithmetic_type::make_limited<::std::int8_t>(player._pISplLvlAdd));
 	file.Skip<uint8_t>(); // Skip _pISplCost
 	file.Skip(2);         // Alignment
 	file.WriteLE<int32_t>(player._pISplDur);
@@ -1810,6 +1834,63 @@ void LoadHeroItems(Player &player)
 	gbIsHellfireSaveGame = gbIsHellfire;
 }
 
+void LoadHeroExtensions(Player &player)
+{
+	auto const collector = [] () -> ::std::unique_ptr<CSimpleIni> {
+		auto buffer = ::std::vector<char>(0);
+
+		LoadHelper file(OpenSaveArchive(gSaveNumber), "extensions.ini");
+		if (not file.IsValid()) return nullptr;
+
+		auto const size = file.Size();
+		if (not (0 < size)) return nullptr;
+
+		buffer.resize(1 + size, 0);
+		file.NextBytes(buffer.data(), size);
+
+		auto const text = ::std::string(buffer.data());
+		if (text.length() != size) app_fatal("%s", _("Unable to read extensions from save file archive").c_str());
+
+		auto &&result = ::std::make_unique<CSimpleIni>();
+		if (SI_OK != result->LoadData(text)) app_fatal("%s", _("Unable to read extensions from save file archive").c_str());
+		return ::std::move(result);
+	}();
+
+	if (not collector) return;
+	auto const * const section = collector->GetSection("Hero");
+	if (not section) return;
+
+	auto const parse = [section] (auto &&key, auto &destination) {
+		auto const iterator = section->find(::std::forward<decltype(key)>(key));
+		if (section->end() == iterator) return false;
+		auto const * const sz = iterator->second;
+		if (not sz) return false;
+		auto const text = ::std::string_view{sz};
+		using ValueType = ::std::decay_t<decltype(destination)>;
+		if constexpr (not ::std::is_arithmetic_v<ValueType>) destination = text;
+		else if (not text.empty()) {
+			ValueType temporary;
+			auto [pointer, error] { ::std::from_chars(text.begin(), text.end(), temporary) };
+			if (not pointer) app_fatal("%s", _("Unable to read extensions from save file archive").c_str());
+			if ((0 == *pointer) and (::std::errc{} == error)) destination = temporary;
+		}
+		return true;
+	};
+
+	if (parse("Strength", player._pBaseStr)) player._pStrength = player._pBaseStr;
+	if (parse("Magic", player._pBaseMag)) player._pMagic = player._pBaseMag;
+	if (parse("Dexterity", player._pBaseDex)) player._pDexterity = player._pBaseDex;
+	if (parse("Vitality", player._pBaseVit)) player._pVitality = player._pBaseVit;
+
+	{
+		::std::size_t index = 0;
+		for (auto &level: player._pSplLvl) {
+			auto const key = "Spell" + ::std::to_string(index++);
+			parse(key.c_str(), level);
+		}
+	}
+}
+
 constexpr uint8_t StashVersion = 0;
 
 void LoadStash()
@@ -2075,6 +2156,35 @@ void SaveHeroItems(Player &player)
 		SaveItem(file, item);
 	for (const Item &item : player.SpdList)
 		SaveItem(file, item);
+}
+
+void SaveHeroExtensions(Player const &player)
+{
+	auto const text = [&player] () {
+		auto collector = CSimpleIni{};
+		auto const serialize = [&collector] (auto &&key, auto &&value)  {
+			auto const text = ::std::to_string(::std::forward<decltype(value)>(value));
+			collector.SetValue("Hero", ::std::forward<decltype(key)>(key), text.c_str());
+		};
+		serialize("Strength", player._pBaseStr);
+		serialize("Magic", player._pBaseMag);
+		serialize("Dexterity", player._pBaseDex);
+		serialize("Vitality", player._pBaseVit);
+		{
+			::std::size_t index = 0;
+			for (auto const &level: player._pSplLvl) {
+				auto const key = "Spell" + ::std::to_string(index++);
+				serialize(key.c_str(), level);
+			}
+		}
+		::std::string result;
+		if (SI_OK != collector.Save(result)) app_fatal("%s", _("Unable to serialize extensions for save file archive").c_str());
+		return result;
+	} ();
+
+	auto const size = text.length();
+	SaveHelper file(CurrentSaveArchive(), "extensions.ini", size);
+	file.WriteBytes(text.data(), size);
 }
 
 void SaveStash()
